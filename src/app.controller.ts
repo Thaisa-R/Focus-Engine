@@ -17,6 +17,16 @@ import { UpdateTaskDto } from './task/dto/update-task.dto';
 export class AppController {
   constructor(private readonly taskService: TaskService) {}
 
+  @Get('health')
+  getHealth() {
+    return {
+      status: 'UP',
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+      service: 'FocusEngine API',
+    };
+  }
+
   @Post()
   @ApiBody({ type: CreateTaskDto })
   async createTask(@Body() createTaskDto: CreateTaskDto) {
