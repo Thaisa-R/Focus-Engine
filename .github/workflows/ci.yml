@@ -25,3 +25,21 @@ jobs:
 
       - name: Executar testes automatizados
         run: npm test
+
+      - name: Notificar sucesso no Slack
+        uses: rtCamp/action-slack-notify@v2
+        if: success()
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_TITLE: 'Build e Testes Aprovados! 🚀'
+          SLACK_MESSAGE: 'A pipeline do *FocusEngine* rodou com sucesso na branch master.'
+          SLACK_COLOR: 'good'
+
+      - name: Notificar falha no Slack
+        uses: rtCamp/action-slack-notify@v2
+        if: failure()
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_TITLE: 'Falha na Pipeline ❌'
+          SLACK_MESSAGE: 'Atenção! Os testes quebraram no *FocusEngine*.'
+          SLACK_COLOR: 'danger'
