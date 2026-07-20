@@ -1,10 +1,8 @@
-name: FocusEngine CI
+name: FocusEngine CI/CD
 
 on:
   push:
-    branches: [ master, main ]
-  pull_request:
-    branches: [ master, main ]
+    branches: [ staging, master, main ]
 
 jobs:
   build-and-test:
@@ -32,22 +30,52 @@ jobs:
       - name: Executar testes automatizados
         run: npm test
 
-      - name: Notificar sucesso no Slack
-        uses: rtCamp/action-slack-notify@v2
-        if: success()
-        env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_TITLE: 'Build e Testes Aprovados! 🚀'
-          SLACK_MESSAGE: 'Repositório: *${{ github.repository }}*\n• Branch: `${{ github.ref_name }}`\n• Autor: ${{ github.actor }}\n• Node: `${{ steps.env-versions.outputs.node_ver }}` | npm: `${{ steps.env-versions.outputs.npm_ver }}`\n• Commit: `<https://github.com/${{ github.repository }}/commit/${{ github.sha }}|Ver alteração>`'
-          SLACK_COLOR: 'good'
-          SLACK_FOOTER: 'FocusEngine CI Automation'
-
       - name: Notificar falha no Slack
         uses: rtCamp/action-slack-notify@v2
         if: failure()
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_TITLE: 'Falha crítica na Pipeline ❌'
-          SLACK_MESSAGE: 'Atenção, os testes quebraram!\n• Repositório: *${{ github.repository }}*\n• Branch: `${{ github.ref_name }}`\n• Autor: ${{ github.actor }}\n• Node: `${{ steps.env-versions.outputs.node_ver }}` | npm: `${{ steps.env-versions.outputs.npm_ver }}`\n• <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|Clique aqui para inspecionar os logs de erro>'
+          SLACK_MESSAGE: 'Atenção, os testes quebraram na branch `${{ github.ref_name }}`!\n• Autor: ${{ github.actor }}\n• Node: `${{ steps.env-versions.outputs.node_ver }}` | npm: `${{ steps.env-versions.outputs.npm_ver }}`\n• <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|Clique aqui para inspecionar os logs de erro>'
           SLACK_COLOR: 'danger'
           SLACK_FOOTER: 'FocusEngine CI Automation'
+
+  deploy-staging:
+    needs: build-and-test
+    if: github.ref == 'refs/heads/staging'
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Deploy em Homologação (Staging)
+        run: |
+          echo "Subindo aplicação para o ambiente de staging..."
+
+      - name: Notificar sucesso no Slack (Staging)
+        uses: rtCamp/action-slack-notify@v2
+        if: success()
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_TITLE: 'Deploy em Staging Concluído! 🚀'
+          SLACK_MESSAGE: 'Ambiente: *Homologação (Staging)*\n• Repositório: *${{ github.repository }}*\n• Autor: ${{ github.actor }}\n• Commit: `<https://github.com/${{ github.repository }}/commit/${{ github.sha }}|Ver alteração>`'
+          SLACK_COLOR: 'good'
+          SLACK_FOOTER: 'FocusEngine CD Automation'
+
+  deploy-production:
+    needs: build-and-test
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Deploy em Produção
+        run: |
+          echo "Subindo aplicação para o ambiente de produção..."
+
+      - name: Notificar sucesso no Slack (Production)
+        uses: rtCamp/action-slack-notify@v2
+        if: success()
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_TITLE: 'Deploy em Produção Realizado! 🏆'
+          SLACK_MESSAGE: 'Ambiente: *Produção (Production)*\n• Repositório: *${{ github.repository }}*\n• Autor: ${{ github.actor }}\n• Commit: `<https://github.com/${{ github.repository }}/commit/${{ github.sha }}|Ver alteração>`'
+          SLACK_COLOR: 'good'
+          SLACK_FOOTER: 'FocusEngine CD Automation'
